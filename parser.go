@@ -101,7 +101,7 @@ func (p *parser) ParseContent(file *os.File, mappingHeaderRow int, dataStartRow 
 		return nil, errors.New("excel file valid data behavior is empty")
 	}
 	//excel数据行数限制(500行)
-	if len(rows)-(dataStartRow-1) > 500 {
+	if len(rows)-(dataStartRow-1) > 5000 {
 		return nil, errors.New("data overrun")
 	}
 
