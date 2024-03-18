@@ -2,7 +2,7 @@ package dgexcel
 
 import (
 	"fmt"
-	"github.com/360EntSecGroup-Skylar/excelize"
+	"github.com/xuri/excelize/v2"
 	"reflect"
 	"regexp"
 	"strconv"

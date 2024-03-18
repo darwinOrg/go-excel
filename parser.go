@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/360EntSecGroup-Skylar/excelize"
+	"github.com/xuri/excelize/v2"
 	"os"
 	"path"
 	"reflect"
@@ -95,8 +95,11 @@ func (p *parser) ParseContent(file *os.File, mappingHeaderRow int, dataStartRow 
 		return nil, err
 	}
 	p.uniqueMap = make(map[int][]string)
-	p.sheetName = p.file.GetSheetName(1)
-	rows := p.file.GetRows(p.sheetName)
+	p.sheetName = p.file.GetSheetName(0)
+	rows, err := p.file.GetRows(p.sheetName)
+	if err != nil {
+		return nil, err
+	}
 	if len(rows) < dataStartRow {
 		return nil, errors.New("excel file valid data behavior is empty")
 	}
