@@ -46,10 +46,9 @@ func getStructTagList(v any, tag string) []string {
 	return resList
 }
 
-func getTagValMap(v any, tag string) map[string]string {
-	resMap := make(map[string]string)
+func getTagValMap(v any, tag string) []string {
 	if v == nil {
-		return resMap
+		return []string{}
 	}
 
 	isPtr := false
@@ -59,23 +58,24 @@ func getTagValMap(v any, tag string) map[string]string {
 		isPtr = true
 	}
 
+	var resMap []string
 	fieldNum := typeOf.NumField()
 	for i := 0; i < fieldNum; i++ {
 		structField := typeOf.Field(i)
-		tagValue := structField.Tag.Get(tag)
+		//tagValue := structField.Tag.Get(tag)
 		rv := reflect.ValueOf(v)
 		if isPtr {
 			rv = rv.Elem()
 		}
 		val := rv.FieldByName(structField.Name)
-		resMap[tagValue] = fmt.Sprintf("%v", val.Interface())
+		resMap = append(resMap, fmt.Sprintf("%v", val.Interface()))
 	}
 
 	return resMap
 }
 
-func struct2MapTagList(v any, tag string) []map[string]string {
-	var resList []map[string]string
+func struct2MapTagList(v any, tag string) [][]string {
+	var resList [][]string
 	switch reflect.TypeOf(v).Kind() {
 	case reflect.Slice, reflect.Array:
 		values := reflect.ValueOf(v)
@@ -119,7 +119,8 @@ func ExportStruct2Xlsx(v any) (*excelize.File, error) {
 
 	for r, mapTagVal := range mapTagList {
 		c := 0
-		for tagKey, tagVal := range mapTagVal {
+		for i, tagVal := range mapTagVal {
+			tagKey := tagList[i]
 			mapping, _ := stringMatchExport(tagKey, regexp.MustCompile(`mapping\((.*?)\)`))
 			if mapping != "" {
 				formatStr := strings.Split(mapping, ",")
