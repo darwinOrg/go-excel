@@ -8,9 +8,9 @@ import (
 )
 
 type User struct {
-	Name        string `excel:"name(名称);unique(true)"`
-	Status      int    `excel:"name(状态);mapping(无效:0,有效:1)"`
-	CreatedDate string `excel:"name(创建日期);date(01-02-06,2006-01-02)"`
+	Name        string `excel:"name(名称);unique(true);width(20)"`
+	Status      int    `excel:"name(状态);mapping(无效:0,有效:1);width(40)"`
+	CreatedDate string `excel:"name(创建日期);date(01-02-06,2006-01-02);width(80)"`
 }
 
 func TestSimpleBindExcel2Struct(t *testing.T) {
