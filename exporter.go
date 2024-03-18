@@ -103,6 +103,7 @@ func ExportStruct2Xlsx(v any) (*excelize.File, error) {
 	for c, tagVal := range tagList {
 		name, _ := stringMatchExport(tagVal, regexp.MustCompile(`name\((.*?)\)`))
 		cellIndex := columnFlags[c] + "1"
+		xlsx.SetColWidth(sheetName, columnFlags[c], columnFlags[c], 15)
 		xlsx.SetCellValue(sheetName, cellIndex, name)
 	}
 
