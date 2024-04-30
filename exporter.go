@@ -9,9 +9,12 @@ import (
 	"strings"
 )
 
-const sheetName = "Sheet1"
+const defaultSheetName = "Sheet1"
 
-var columnFlags = []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}
+var (
+	columnFlags = []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}
+	urlRegex    = regexp.MustCompile(`^(https?|ftp)://[a-zA-Z0-9.-]+.[a-zA-Z]{2,}/?[\w./-]*$`)
+)
 
 func getStructTagList(v any, tag string) []string {
 	var resList []string
@@ -98,7 +101,7 @@ func ExportStruct2Xlsx(v any) (*excelize.File, error) {
 	tagList := getStructTagList(v, tag)
 	mapTagList := struct2MapTagList(v, tag)
 	xlsx := excelize.NewFile()
-	xlsx.NewSheet(sheetName)
+	_, _ = xlsx.NewSheet(defaultSheetName)
 
 	for c, tagVal := range tagList {
 		name, _ := stringMatchExport(tagVal, regexp.MustCompile(`name\((.*?)\)`))
@@ -111,10 +114,10 @@ func ExportStruct2Xlsx(v any) (*excelize.File, error) {
 		if wt == 0 {
 			wt = 20
 		}
-		xlsx.SetColWidth(sheetName, columnFlags[c], columnFlags[c], float64(wt))
+		_ = xlsx.SetColWidth(defaultSheetName, columnFlags[c], columnFlags[c], float64(wt))
 
 		cellIndex := columnFlags[c] + "1"
-		xlsx.SetCellValue(sheetName, cellIndex, name)
+		_ = xlsx.SetCellValue(defaultSheetName, cellIndex, name)
 	}
 
 	for r, mapTagVal := range mapTagList {
@@ -136,7 +139,12 @@ func ExportStruct2Xlsx(v any) (*excelize.File, error) {
 			}
 
 			cellIndex := columnFlags[c] + strconv.Itoa(r+2)
-			xlsx.SetCellValue(sheetName, cellIndex, tagVal)
+			if urlRegex.MatchString(tagVal) {
+				_ = xlsx.SetCellFormula(defaultSheetName, cellIndex, fmt.Sprintf("=HYPERLINK(\"%s\", \"%s\")", tagVal, tagVal))
+			} else {
+				_ = xlsx.SetCellValue(defaultSheetName, cellIndex, tagVal)
+			}
+
 			c++
 		}
 	}
