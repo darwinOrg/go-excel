@@ -13,7 +13,7 @@ const defaultSheetName = "Sheet1"
 
 var (
 	columnFlags = []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}
-	urlRegex    = regexp.MustCompile(`^(https?|ftp)://[a-zA-Z0-9.-]+.[a-zA-Z]{2,}/?[\w./-]*$`)
+	urlRegex    = regexp.MustCompile(`^((https|http|ftp|rtsp|mms)?://)\S+$`)
 )
 
 func getStructTagList(v any, tag string) []string {
