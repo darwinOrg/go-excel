@@ -16,6 +16,17 @@ var (
 	urlRegex    = regexp.MustCompile(`^((https|http|ftp|rtsp|mms)?://)\S+$`)
 )
 
+type ExcelHeader struct {
+	Name  string
+	Width float64
+}
+
+type ExcelSheet struct {
+	Name    string
+	Headers []*ExcelHeader
+	Datas   [][]any
+}
+
 func getStructTagList(v any, tag string) []string {
 	var resList []string
 	if v == nil {
@@ -150,4 +161,42 @@ func ExportStruct2Xlsx(v any) (*excelize.File, error) {
 	}
 
 	return xlsx, nil
+}
+
+func ExportExcelSheets(sheets []*ExcelSheet) *excelize.File {
+	xlsx := excelize.NewFile()
+	if len(sheets) == 0 {
+		return xlsx
+	}
+
+	for _, sheet := range sheets {
+		if sheet.Name == "" {
+			sheet.Name = defaultSheetName
+		}
+		_, _ = xlsx.NewSheet(sheet.Name)
+
+		for c, header := range sheet.Headers {
+			if header.Width == 0 {
+				header.Width = 20
+			}
+			_ = xlsx.SetColWidth(sheet.Name, columnFlags[c], columnFlags[c], header.Width)
+
+			cellIndex := columnFlags[c] + "1"
+			_ = xlsx.SetCellValue(sheet.Name, cellIndex, header.Name)
+		}
+
+		for r, data := range sheet.Datas {
+			for c, val := range data {
+				cellIndex := columnFlags[c] + strconv.Itoa(r+2)
+				strVal, ok := val.(string)
+				if ok && urlRegex.MatchString(strVal) {
+					_ = xlsx.SetCellFormula(sheet.Name, cellIndex, fmt.Sprintf("=HYPERLINK(\"%s\", \"%s\")", val, val))
+				} else {
+					_ = xlsx.SetCellValue(sheet.Name, cellIndex, val)
+				}
+			}
+		}
+	}
+
+	return xlsx
 }
