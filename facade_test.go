@@ -120,7 +120,7 @@ func TestAddChart(t *testing.T) {
 func TestExportExcelSheets(t *testing.T) {
 	f := ExportExcelSheets([]*ExcelSheet{
 		{
-			Name: "Sheet1",
+			Name: "用户1",
 			Headers: []*ExcelHeader{
 				{Name: "姓名", Width: 20},
 				{Name: "状态", Width: 20},
@@ -132,7 +132,7 @@ func TestExportExcelSheets(t *testing.T) {
 			},
 		},
 		{
-			Name: "Sheet2",
+			Name: "用户2",
 			Headers: []*ExcelHeader{
 				{Name: "姓名", Width: 20},
 				{Name: "状态", Width: 20},

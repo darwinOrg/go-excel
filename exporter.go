@@ -169,11 +169,15 @@ func ExportExcelSheets(sheets []*ExcelSheet) *excelize.File {
 		return xlsx
 	}
 
-	for _, sheet := range sheets {
+	for i, sheet := range sheets {
 		if sheet.Name == "" {
 			sheet.Name = defaultSheetName
 		}
-		_, _ = xlsx.NewSheet(sheet.Name)
+		if i == 0 {
+			_ = xlsx.SetSheetName(defaultSheetName, sheet.Name)
+		} else {
+			_, _ = xlsx.NewSheet(sheet.Name)
+		}
 
 		for c, header := range sheet.Headers {
 			if header.Width == 0 {
