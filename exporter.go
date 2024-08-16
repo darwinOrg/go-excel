@@ -2,6 +2,7 @@ package dgexcel
 
 import (
 	"fmt"
+	dgcoll "github.com/darwinOrg/go-common/collection"
 	"github.com/xuri/excelize/v2"
 	"reflect"
 	"regexp"
@@ -17,8 +18,9 @@ var (
 )
 
 type ExcelHeader struct {
-	Name  string
-	Width float64
+	Name        string
+	Width       float64
+	AlignCenter bool
 }
 
 type ExcelSheet struct {
@@ -113,6 +115,7 @@ func ExportStruct2Xlsx(v any) (*excelize.File, error) {
 	mapTagList := struct2MapTagList(v, tag)
 	xlsx := excelize.NewFile()
 	_, _ = xlsx.NewSheet(defaultSheetName)
+	centerStyleId := buildCenterStyleId(xlsx)
 
 	for c, tagVal := range tagList {
 		name, _ := stringMatchExport(tagVal, regexp.MustCompile(`name\((.*?)\)`))
@@ -129,6 +132,7 @@ func ExportStruct2Xlsx(v any) (*excelize.File, error) {
 
 		cellIndex := columnFlags[c] + "1"
 		_ = xlsx.SetCellValue(defaultSheetName, cellIndex, name)
+		_ = xlsx.SetCellStyle(defaultSheetName, cellIndex, cellIndex, centerStyleId)
 	}
 
 	for r, mapTagVal := range mapTagList {
@@ -160,6 +164,8 @@ func ExportStruct2Xlsx(v any) (*excelize.File, error) {
 		}
 	}
 
+	frozenFirstRow(xlsx, defaultSheetName)
+
 	return xlsx, nil
 }
 
@@ -168,6 +174,7 @@ func ExportExcelSheets(sheets []*ExcelSheet) *excelize.File {
 	if len(sheets) == 0 {
 		return xlsx
 	}
+	centerStyleId := buildCenterStyleId(xlsx)
 
 	for i, sheet := range sheets {
 		if sheet.Name == "" {
@@ -179,14 +186,20 @@ func ExportExcelSheets(sheets []*ExcelSheet) *excelize.File {
 			_, _ = xlsx.NewSheet(sheet.Name)
 		}
 
+		var alignCenterColumns []int
+
 		for c, header := range sheet.Headers {
 			if header.Width == 0 {
 				header.Width = 20
 			}
-			_ = xlsx.SetColWidth(sheet.Name, columnFlags[c], columnFlags[c], header.Width)
+			if header.AlignCenter {
+				alignCenterColumns = append(alignCenterColumns, c)
+			}
 
+			_ = xlsx.SetColWidth(sheet.Name, columnFlags[c], columnFlags[c], header.Width)
 			cellIndex := columnFlags[c] + "1"
 			_ = xlsx.SetCellValue(sheet.Name, cellIndex, header.Name)
+			_ = xlsx.SetCellStyle(sheet.Name, cellIndex, cellIndex, centerStyleId)
 		}
 
 		for r, data := range sheet.Datas {
@@ -198,9 +211,35 @@ func ExportExcelSheets(sheets []*ExcelSheet) *excelize.File {
 				} else {
 					_ = xlsx.SetCellValue(sheet.Name, cellIndex, val)
 				}
+				if dgcoll.Contains(alignCenterColumns, c) {
+					_ = xlsx.SetCellStyle(sheet.Name, cellIndex, cellIndex, centerStyleId)
+				}
 			}
 		}
+
+		frozenFirstRow(xlsx, sheet.Name)
 	}
 
 	return xlsx
+}
+
+func frozenFirstRow(xlsx *excelize.File, sheetName string) {
+	_ = xlsx.SetPanes(sheetName, &excelize.Panes{
+		Freeze:      true,
+		XSplit:      0,
+		YSplit:      1,
+		TopLeftCell: "A2",
+		ActivePane:  "bottomLeft",
+	})
+}
+
+func buildCenterStyleId(xlsx *excelize.File) int {
+	styleId, _ := xlsx.NewStyle(&excelize.Style{
+		Alignment: &excelize.Alignment{
+			Horizontal: "center",
+			Vertical:   "center",
+		},
+	})
+
+	return styleId
 }

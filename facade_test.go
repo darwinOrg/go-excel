@@ -123,7 +123,7 @@ func TestExportExcelSheets(t *testing.T) {
 			Name: "用户1",
 			Headers: []*ExcelHeader{
 				{Name: "姓名", Width: 20},
-				{Name: "状态", Width: 20},
+				{Name: "状态", Width: 20, AlignCenter: true},
 				{Name: "创建日期", Width: 40},
 			},
 			Datas: [][]any{
