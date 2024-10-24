@@ -10,7 +10,7 @@ import (
 )
 
 type User struct {
-	Name        string `excel:"name(名称);unique(true);width(20)"`
+	Name        string `excel:"name(姓名);unique(true);width(20)"`
 	Status      int    `excel:"name(状态);mapping(无效:0,有效:1);width(40)"`
 	CreatedDate string `excel:"name(创建日期);date(01-02-06,2006-01-02);width(80)"`
 }
@@ -59,6 +59,21 @@ func TestExportStruct2XlsxFileAndInsertRows(t *testing.T) {
 		TopLeftCell: "A3",
 		ActivePane:  "bottomLeft",
 	})
+
+	err = xlsx.SaveAs("./exported_users.xlsx")
+	if err != nil {
+		panic(err)
+	}
+}
+
+func TestExportStruct2XlsxByTemplate(t *testing.T) {
+	ctx := &dgctx.DgContext{TraceId: "123"}
+	users, _ := SimpleBindExcel2Struct[User](ctx, "./users.xlsx")
+
+	xlsx, err := ExportStruct2XlsxByTemplate(users, "./users_template.xlsx")
+	if err != nil {
+		panic(err)
+	}
 
 	err = xlsx.SaveAs("./exported_users.xlsx")
 	if err != nil {

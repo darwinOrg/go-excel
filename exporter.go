@@ -4,6 +4,7 @@ import (
 	"fmt"
 	dgcoll "github.com/darwinOrg/go-common/collection"
 	"github.com/xuri/excelize/v2"
+	"os"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -13,8 +14,11 @@ import (
 const defaultSheetName = "Sheet1"
 
 var (
-	columnFlags = []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}
-	urlRegex    = regexp.MustCompile(`^((https|http|ftp|rtsp|mms)?://)\S+$`)
+	columnFlags  = []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}
+	urlRegex     = regexp.MustCompile(`^((https|http|ftp|rtsp|mms)?://)\S+$`)
+	nameRegex    = regexp.MustCompile(`name\((.*?)\)`)
+	mappingRegex = regexp.MustCompile(`mapping\((.*?)\)`)
+	widthRegex   = regexp.MustCompile(`width\((.*?)\)`)
 )
 
 type ExcelHeader struct {
@@ -62,7 +66,7 @@ func getStructTagList(v any, tag string) []string {
 	return resList
 }
 
-func getTagValMap(v any, tag string) []string {
+func getTagValMap(v any) []string {
 	if v == nil {
 		return []string{}
 	}
@@ -90,18 +94,18 @@ func getTagValMap(v any, tag string) []string {
 	return resMap
 }
 
-func struct2MapTagList(v any, tag string) [][]string {
+func struct2MapTagList(v any) [][]string {
 	var resList [][]string
 	switch reflect.TypeOf(v).Kind() {
 	case reflect.Slice, reflect.Array:
 		values := reflect.ValueOf(v)
 		for i := 0; i < values.Len(); i++ {
-			resList = append(resList, getTagValMap(values.Index(i).Interface(), tag))
+			resList = append(resList, getTagValMap(values.Index(i).Interface()))
 		}
 		break
 	case reflect.Struct:
 		val := reflect.ValueOf(v).Interface()
-		resList = append(resList, getTagValMap(val, tag))
+		resList = append(resList, getTagValMap(val))
 		break
 	default:
 		panic(fmt.Sprintf("type %v not support", reflect.TypeOf(v).Kind()))
@@ -110,17 +114,16 @@ func struct2MapTagList(v any, tag string) [][]string {
 }
 
 func ExportStruct2Xlsx(v any) (*excelize.File, error) {
-	var tag = "excel"
-	tagList := getStructTagList(v, tag)
-	mapTagList := struct2MapTagList(v, tag)
+	tagList := getStructTagList(v, "excel")
+	mapTagList := struct2MapTagList(v)
 	xlsx := excelize.NewFile()
 	_, _ = xlsx.NewSheet(defaultSheetName)
 	centerStyleId := buildCenterStyleId(xlsx)
 
 	for c, tagVal := range tagList {
-		name, _ := stringMatchExport(tagVal, regexp.MustCompile(`name\((.*?)\)`))
+		name, _ := stringMatchExport(tagVal, nameRegex)
 
-		width, _ := stringMatchExport(tagVal, regexp.MustCompile(`width\((.*?)\)`))
+		width, _ := stringMatchExport(tagVal, widthRegex)
 		if width == "" {
 			width = "20"
 		}
@@ -139,7 +142,7 @@ func ExportStruct2Xlsx(v any) (*excelize.File, error) {
 		c := 0
 		for i, tagVal := range mapTagVal {
 			tagKey := tagList[i]
-			mapping, _ := stringMatchExport(tagKey, regexp.MustCompile(`mapping\((.*?)\)`))
+			mapping, _ := stringMatchExport(tagKey, mappingRegex)
 			if mapping != "" {
 				formatStr := strings.Split(mapping, ",")
 				for _, format := range formatStr {
@@ -165,6 +168,74 @@ func ExportStruct2Xlsx(v any) (*excelize.File, error) {
 	}
 
 	frozenFirstRow(xlsx, defaultSheetName)
+
+	return xlsx, nil
+}
+
+func ExportStruct2XlsxByTemplate(v any, templateFilePath string) (*excelize.File, error) {
+	file, err := os.Open(templateFilePath)
+	if err != nil {
+		return nil, err
+	}
+	defer func(f *os.File) {
+		_ = f.Close()
+	}(file)
+	xlsx, err := excelize.OpenReader(file)
+	if err != nil {
+		return nil, err
+	}
+
+	firstSheetName := xlsx.GetSheetList()[0]
+	rows, err := xlsx.GetRows(firstSheetName)
+	if err != nil {
+		return nil, err
+	}
+	headers := rows[0]
+
+	tagList := getStructTagList(v, "excel")
+	mapTagList := struct2MapTagList(v)
+
+	for r, mapTagVal := range mapTagList {
+		for i, tagVal := range mapTagVal {
+			tagKey := tagList[i]
+			mapping, _ := stringMatchExport(tagKey, mappingRegex)
+			if mapping != "" {
+				formatStr := strings.Split(mapping, ",")
+				for _, format := range formatStr {
+					n := strings.SplitN(format, ":", 2)
+					if len(n) != 2 {
+						continue
+					}
+					if n[1] == tagVal {
+						tagVal = n[0]
+					}
+				}
+			}
+
+			name, _ := stringMatchExport(tagKey, nameRegex)
+			if name == "" {
+				continue
+			}
+
+			for c, header := range headers {
+				if header == name {
+					cellIndex := columnFlags[c] + strconv.Itoa(r+2)
+					if urlRegex.MatchString(tagVal) {
+						_ = xlsx.SetCellFormula(firstSheetName, cellIndex, fmt.Sprintf("=HYPERLINK(\"%s\", \"%s\")", tagVal, tagVal))
+					} else {
+						_ = xlsx.SetCellValue(firstSheetName, cellIndex, tagVal)
+					}
+
+					cellStyle, err := xlsx.GetCellStyle(firstSheetName, columnFlags[c]+"2")
+					if err == nil {
+						_ = xlsx.SetCellStyle(firstSheetName, cellIndex, cellIndex, cellStyle)
+					}
+
+					break
+				}
+			}
+		}
+	}
 
 	return xlsx, nil
 }
