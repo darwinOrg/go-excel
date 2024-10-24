@@ -70,7 +70,7 @@ func TestExportStruct2XlsxByTemplate(t *testing.T) {
 	ctx := &dgctx.DgContext{TraceId: "123"}
 	users, _ := SimpleBindExcel2Struct[User](ctx, "./users.xlsx")
 
-	xlsx, err := ExportStruct2XlsxByTemplate(users, "./users_template.xlsx")
+	xlsx, err := ExportStruct2XlsxByTemplate(users, "./users_template.xlsx", 0)
 	if err != nil {
 		panic(err)
 	}

@@ -1,6 +1,7 @@
 package dgexcel
 
 import (
+	"errors"
 	"fmt"
 	dgcoll "github.com/darwinOrg/go-common/collection"
 	"github.com/xuri/excelize/v2"
@@ -175,7 +176,7 @@ func ExportStruct2Xlsx(v any) (*excelize.File, error) {
 	return xlsx, nil
 }
 
-func ExportStruct2XlsxByTemplate(v any, templateFilePath string) (*excelize.File, error) {
+func ExportStruct2XlsxByTemplate(v any, templateFilePath string, headerRow int) (*excelize.File, error) {
 	file, err := os.Open(templateFilePath)
 	if err != nil {
 		return nil, err
@@ -193,7 +194,10 @@ func ExportStruct2XlsxByTemplate(v any, templateFilePath string) (*excelize.File
 	if err != nil {
 		return nil, err
 	}
-	headers := rows[0]
+	if len(rows) < headerRow+1 {
+		return nil, errors.New("invalid header row")
+	}
+	headers := rows[headerRow]
 
 	tagList := getStructTagList(v, "excel")
 	mapTagList := struct2MapTagList(v)
