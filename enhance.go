@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func RemoveDuplicateRowsByColumn(xlsx *excelize.File, sheetName string, startRowIndex int, columnIndex int) (*excelize.File, error) {
+func RemoveDuplicateRowsByColumn(xlsx *excelize.File, sheetName string, startRowIndex int, columnIndex int, reserveValues ...string) (*excelize.File, error) {
 	rows, err := xlsx.GetRows(sheetName)
 	if err != nil {
 		return nil, err
@@ -23,9 +23,13 @@ func RemoveDuplicateRowsByColumn(xlsx *excelize.File, sheetName string, startRow
 
 	for i, row := range rows {
 		cell := strings.TrimSpace(row[columnIndex])
-		if cell == "" {
-			newRows = append(newRows, row)
-			continue
+		if len(reserveValues) > 0 {
+			for _, reserveValue := range reserveValues {
+				if cell == reserveValue {
+					newRows = append(newRows, row)
+					continue
+				}
+			}
 		}
 
 		if mp[cell] {
