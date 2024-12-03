@@ -1,9 +1,9 @@
 module github.com/darwinOrg/go-excel
 
-go 1.19
+go 1.23
 
 require (
-	github.com/darwinOrg/go-common v0.1.62
+	github.com/darwinOrg/go-common v0.1.70
 	github.com/darwinOrg/go-logger v0.0.7
 	github.com/xuri/excelize/v2 v2.9.0
 )
