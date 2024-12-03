@@ -27,7 +27,7 @@ func RemoveDuplicateRowsByColumn(xlsx *excelize.File, sheetName string, startRow
 		}
 
 		if mp[cell] {
-			duplicatedRowIndexes = append(duplicatedRowIndexes, i)
+			duplicatedRowIndexes = append(duplicatedRowIndexes, startRowIndex+i)
 		} else {
 			mp[cell] = true
 		}
