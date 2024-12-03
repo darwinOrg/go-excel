@@ -16,10 +16,10 @@ func RemoveDuplicateRowsByColumn(xlsx *excelize.File, sheetName string, startRow
 		return nil, dgerr.ARGUMENT_NOT_VALID
 	}
 
+	newRows := rows[:startRowIndex]
 	rows = rows[startRowIndex:]
 	mp := make(map[string]bool)
 	var duplicatedRowIndexes []int
-	newRows := rows[:startRowIndex]
 
 	for i, row := range rows {
 		cell := strings.TrimSpace(row[columnIndex])
