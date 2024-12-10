@@ -252,18 +252,41 @@ func ExportExcelSheets(sheets []*ExcelSheet) *excelize.File {
 	if len(sheets) == 0 {
 		return xlsx
 	}
-	centerStyleId := buildCenterStyleId(xlsx)
 
 	for i, sheet := range sheets {
 		if sheet.Name == "" {
-			sheet.Name = defaultSheetName
+			sheet.Name = fmt.Sprintf("Sheet%d", xlsx.SheetCount+1)
 		}
 		if i == 0 {
 			_ = xlsx.SetSheetName(defaultSheetName, sheet.Name)
 		} else {
 			_, _ = xlsx.NewSheet(sheet.Name)
 		}
+	}
 
+	fillExcelSheets(xlsx, sheets)
+	return xlsx
+}
+
+func AppendExcelSheets(xlsx *excelize.File, sheets []*ExcelSheet) {
+	if len(sheets) == 0 {
+		return
+	}
+
+	for _, sheet := range sheets {
+		if sheet.Name == "" {
+			sheet.Name = fmt.Sprintf("Sheet%d", xlsx.SheetCount+1)
+		}
+		_, _ = xlsx.NewSheet(sheet.Name)
+	}
+
+	fillExcelSheets(xlsx, sheets)
+}
+
+func fillExcelSheets(xlsx *excelize.File, sheets []*ExcelSheet) {
+	centerStyleId := buildCenterStyleId(xlsx)
+
+	for _, sheet := range sheets {
 		var alignCenterColumns []int
 
 		for c, header := range sheet.Headers {
@@ -297,8 +320,6 @@ func ExportExcelSheets(sheets []*ExcelSheet) *excelize.File {
 
 		frozenFirstRow(xlsx, sheet.Name)
 	}
-
-	return xlsx
 }
 
 func frozenFirstRow(xlsx *excelize.File, sheetName string) {
