@@ -1,10 +1,13 @@
 package dgexcel
 
 import (
-	"errors"
+	"fmt"
+	dgcoll "github.com/darwinOrg/go-common/collection"
 	dgctx "github.com/darwinOrg/go-common/context"
+	dgerr "github.com/darwinOrg/go-common/enums/error"
 	dglogger "github.com/darwinOrg/go-logger"
 	"os"
+	"strings"
 )
 
 func SimpleBindExcel2Struct[T any](ctx *dgctx.DgContext, filePath string) ([]*T, error) {
@@ -37,10 +40,13 @@ func BindExcelUsingTargetBuilder(ctx *dgctx.DgContext, filePath string, headerRo
 	}
 	errList, has := rt.HasError()
 	if has {
+		var errs []string
 		for k, v := range errList {
-			dglogger.Error(ctx, k, v)
+			dglogger.Warn(ctx, k, v)
+			egs := dgcoll.MapToList(v, func(s string) string { return fmt.Sprintf("%dth row: %s", k, s) })
+			errs = append(errs, egs...)
 		}
-		return nil, errors.New("parse content error")
+		return nil, dgerr.SimpleDgError(strings.Join(errs, "\n"))
 	}
 
 	ts, err := rt.FormatBaseTargetBuilder(targetBuilderFn)
@@ -79,10 +85,13 @@ func BindExcel2Struct[T any](ctx *dgctx.DgContext, filePath string, headerRow in
 	}
 	errList, has := rt.HasError()
 	if has {
+		var errs []string
 		for k, v := range errList {
-			dglogger.Error(ctx, k, v)
+			dglogger.Warn(ctx, k, v)
+			egs := dgcoll.MapToList(v, func(s string) string { return fmt.Sprintf("%dth row: %s", k, s) })
+			errs = append(errs, egs...)
 		}
-		return nil, errors.New("parse content error")
+		return nil, dgerr.SimpleDgError(strings.Join(errs, "\n"))
 	}
 
 	ts := make([]*T, 0)

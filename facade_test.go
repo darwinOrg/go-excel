@@ -17,7 +17,11 @@ type User struct {
 
 func TestSimpleBindExcel2Struct(t *testing.T) {
 	ctx := &dgctx.DgContext{TraceId: "123"}
-	users, _ := SimpleBindExcel2Struct[User](ctx, "./users.xlsx")
+	users, err := SimpleBindExcel2Struct[User](ctx, "./users.xlsx")
+	if err != nil {
+		dglogger.Errorf(ctx, "bind excel to struct error: \n%v", err)
+		return
+	}
 	usersBytes, _ := json.Marshal(users)
 	dglogger.Infof(ctx, "%s", string(usersBytes))
 }

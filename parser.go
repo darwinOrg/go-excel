@@ -78,7 +78,7 @@ func (p *parser) generateMapping(val reflect.Value, baseField string) {
 func stringMatchExport(str string, reg *regexp.Regexp) (res string, err error) {
 	defer func() {
 		if panicInfo := recover(); panicInfo != nil {
-			err = errors.New("not match reg")
+			err = errors.New("not match regexp")
 		}
 	}()
 	return reg.FindStringSubmatch(str)[1], nil
@@ -86,7 +86,7 @@ func stringMatchExport(str string, reg *regexp.Regexp) (res string, err error) {
 
 func (p *parser) ParseContent(file *os.File, mappingHeaderRow int, dataStartRow int) (*Result, error) {
 	if mappingHeaderRow-1 < 0 {
-		return nil, errors.New("no Excel mapping header position is specified")
+		return nil, errors.New("no excel mapping header position is specified")
 	}
 	if mappingHeaderRow >= dataStartRow {
 		return nil, errors.New("mapping header row position cannot be greater than or equal to the beginning of the data row")
