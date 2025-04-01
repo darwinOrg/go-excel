@@ -46,7 +46,7 @@ func BindExcelUsingTargetBuilder(ctx *dgctx.DgContext, filePath string, headerRo
 			egs := dgcoll.MapToList(v, func(s string) string { return fmt.Sprintf("第%d行：%s", k, s) })
 			errs = append(errs, egs...)
 		}
-		return nil, dgerr.SimpleDgError(strings.Join(errs, "；"))
+		return nil, dgerr.SimpleDgError(strings.Join(errs, "\n"))
 	}
 
 	ts, err := rt.FormatBaseTargetBuilder(targetBuilderFn)
@@ -91,7 +91,7 @@ func BindExcel2Struct[T any](ctx *dgctx.DgContext, filePath string, headerRow in
 			egs := dgcoll.MapToList(v, func(s string) string { return fmt.Sprintf("第%d行：%s", k, s) })
 			errs = append(errs, egs...)
 		}
-		return nil, dgerr.SimpleDgError(strings.Join(errs, "；"))
+		return nil, dgerr.SimpleDgError(strings.Join(errs, "\n"))
 	}
 
 	ts := make([]*T, 0)
