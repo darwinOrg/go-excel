@@ -43,10 +43,10 @@ func BindExcelUsingTargetBuilder(ctx *dgctx.DgContext, filePath string, headerRo
 		var errs []string
 		for k, v := range errList {
 			dglogger.Warn(ctx, k, v)
-			egs := dgcoll.MapToList(v, func(s string) string { return fmt.Sprintf("%dth row: %s", k, s) })
+			egs := dgcoll.MapToList(v, func(s string) string { return fmt.Sprintf("第%d行：%s", k, s) })
 			errs = append(errs, egs...)
 		}
-		return nil, dgerr.SimpleDgError(strings.Join(errs, "\n"))
+		return nil, dgerr.SimpleDgError(strings.Join(errs, "；"))
 	}
 
 	ts, err := rt.FormatBaseTargetBuilder(targetBuilderFn)
@@ -88,10 +88,10 @@ func BindExcel2Struct[T any](ctx *dgctx.DgContext, filePath string, headerRow in
 		var errs []string
 		for k, v := range errList {
 			dglogger.Warn(ctx, k, v)
-			egs := dgcoll.MapToList(v, func(s string) string { return fmt.Sprintf("%dth row: %s", k, s) })
+			egs := dgcoll.MapToList(v, func(s string) string { return fmt.Sprintf("第%d行：%s", k, s) })
 			errs = append(errs, egs...)
 		}
-		return nil, dgerr.SimpleDgError(strings.Join(errs, "\n"))
+		return nil, dgerr.SimpleDgError(strings.Join(errs, "；"))
 	}
 
 	ts := make([]*T, 0)
