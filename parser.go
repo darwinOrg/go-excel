@@ -15,6 +15,8 @@ import (
 	"unsafe"
 )
 
+var AllowMaxRow = 10000
+
 type parser struct {
 	file         *excelize.File
 	fieldMapping map[string]map[string]string
@@ -103,8 +105,8 @@ func (p *parser) ParseContent(file *os.File, mappingHeaderRow int, dataStartRow 
 	if len(rows) < dataStartRow {
 		return nil, errors.New("excel file valid data behavior is empty")
 	}
-	//excel数据行数限制(500行)
-	if len(rows)-(dataStartRow-1) > 5000 {
+	//excel数据行数限制
+	if len(rows)-(dataStartRow-1) > AllowMaxRow {
 		return nil, errors.New("data overrun")
 	}
 
