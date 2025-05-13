@@ -27,13 +27,13 @@ func BindExcelUsingTargetBuilder(ctx *dgctx.DgContext, filePath string, headerRo
 		}
 	}(file)
 
-	parser, err := NewParser(targetBuilderFn())
+	p, err := newParser(targetBuilderFn())
 	if err != nil {
 		dglogger.Errorf(ctx, "new parser error: %v", err)
 		return nil, err
 	}
 
-	rt, err := parser.ParseContent(file, headerRow, dataStartRow)
+	rt, err := p.ParseContent(file, headerRow, dataStartRow)
 	if err != nil {
 		dglogger.Errorf(ctx, "parse content error: %v", err)
 		return nil, err
@@ -72,13 +72,13 @@ func BindExcel2Struct[T any](ctx *dgctx.DgContext, filePath string, headerRow in
 	}(file)
 
 	t := new(T)
-	processor, err := NewParser(t)
+	p, err := newParser(t)
 	if err != nil {
 		dglogger.Errorf(ctx, "new parser error: %v", err)
 		return nil, err
 	}
 
-	rt, err := processor.ParseContent(file, headerRow, dataStartRow)
+	rt, err := p.ParseContent(file, headerRow, dataStartRow)
 	if err != nil {
 		dglogger.Errorf(ctx, "parse content error: %v", err)
 		return nil, err

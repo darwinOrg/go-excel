@@ -15,6 +15,14 @@ import (
 	"unsafe"
 )
 
+const (
+	excelTag   = "excel"
+	nameTag    = "name"
+	uniqueTag  = "unique"
+	dateTag    = "date"
+	mappingTag = "mapping"
+)
+
 var AllowMaxRow = 10000
 
 type parser struct {
@@ -26,7 +34,7 @@ type parser struct {
 	uniqueMap    map[int][]string
 }
 
-func NewParser(body any) (*parser, error) {
+func newParser(body any) (*parser, error) {
 	p := new(parser)
 	p.val = reflect.ValueOf(body)
 	if p.val.Kind() != reflect.Ptr {
@@ -61,17 +69,17 @@ func (p *parser) generateMapping(val reflect.Value, baseField string) {
 		if baseField != "" {
 			fieldName = fmt.Sprintf("%s.%s", baseField, fieldName)
 		}
-		excel, ok := typ.Field(i).Tag.Lookup("excel")
+		excel, ok := typ.Field(i).Tag.Lookup(excelTag)
 		if !ok {
 			//生成嵌套结构体的映射关系
 			fieldVal := val.Field(i)
 			p.generateMapping(fieldVal, fieldName)
 			continue
 		}
-		m := map[string]string{"name": fieldName}
-		m["mapping"], _ = stringMatchExport(excel, regexp.MustCompile(`mapping\((.*?)\)`))
-		m["unique"], _ = stringMatchExport(excel, regexp.MustCompile(`unique\((.*?)\)`))
-		m["date"], _ = stringMatchExport(excel, regexp.MustCompile(`date\((.*?)\)`))
+		m := map[string]string{nameTag: fieldName}
+		m[mappingTag], _ = stringMatchExport(excel, regexp.MustCompile(`mapping\((.*?)\)`))
+		m[uniqueTag], _ = stringMatchExport(excel, regexp.MustCompile(`unique\((.*?)\)`))
+		m[dateTag], _ = stringMatchExport(excel, regexp.MustCompile(`date\((.*?)\)`))
 		mappingName, _ := stringMatchExport(excel, regexp.MustCompile(`name\((.*?)\)`))
 		p.fieldMapping[strings.TrimSpace(mappingName)] = m
 	}
@@ -159,7 +167,7 @@ func (p *parser) rows(rows [][]string, mappingHeaderRow, dataStartRow int, res *
 				continue
 			}
 			//参数赋值
-			errs, err := p.parseValue(newBodyVal, mappingField["name"], mappingHeader, colVal)
+			errs, err := p.parseValue(newBodyVal, mappingField[nameTag], mappingHeader, colVal)
 			if err != nil {
 				return err
 			}
@@ -183,7 +191,7 @@ func (p *parser) rows(rows [][]string, mappingHeaderRow, dataStartRow int, res *
 
 func (p *parser) uniqueFormat(rows [][]string, mappingHeader string, col *string, rowIndex, colIndex int, mappingField map[string]string) []string {
 	errList := make([]string, 0)
-	format, ok := mappingField["unique"]
+	format, ok := mappingField[uniqueTag]
 	if !ok || format != "true" {
 		return errList
 	}
@@ -210,7 +218,7 @@ func (p *parser) uniqueFormat(rows [][]string, mappingHeader string, col *string
 
 func (p *parser) dateFormat(mappingHeader string, col *string, mappingField map[string]string) []string {
 	errList := make([]string, 0)
-	format, ok := mappingField["date"]
+	format, ok := mappingField[dateTag]
 	if !ok || format == "" {
 		return errList
 	}
@@ -229,7 +237,7 @@ func (p *parser) dateFormat(mappingHeader string, col *string, mappingField map[
 
 func (p *parser) mappingFormat(mappingHeader string, col *string, mappingField map[string]string) []string {
 	errList := make([]string, 0)
-	format, ok := mappingField["mapping"]
+	format, ok := mappingField[mappingTag]
 	if !ok || format == "" {
 		return errList
 	}

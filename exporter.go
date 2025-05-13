@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	dgcoll "github.com/darwinOrg/go-common/collection"
+	dgctx "github.com/darwinOrg/go-common/context"
+	dglogger "github.com/darwinOrg/go-logger"
 	"github.com/xuri/excelize/v2"
 	"os"
 	"reflect"
@@ -15,10 +17,6 @@ import (
 const defaultSheetName = "Sheet1"
 
 var (
-	columnFlags = []string{
-		"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
-		"AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ", "AK", "AL", "AM", "AN", "AO", "AP", "AQ", "AR", "AS", "AT", "AU", "AV", "AW", "AX", "AY", "AZ",
-	}
 	urlRegex     = regexp.MustCompile(`^((https|http|ftp|rtsp|mms)?://)\S+$`)
 	nameRegex    = regexp.MustCompile(`name\((.*?)\)`)
 	mappingRegex = regexp.MustCompile(`mapping\((.*?)\)`)
@@ -54,7 +52,8 @@ func getStructTagList(v any, tag string) []string {
 	case reflect.Struct:
 		item = reflect.ValueOf(v).Interface()
 	default:
-		panic(fmt.Sprintf("type %v not support", reflect.TypeOf(v).Kind()))
+		dglogger.Errorf(dgctx.SimpleDgContext(), "type %v not support", reflect.TypeOf(v).Kind())
+		return []string{}
 	}
 
 	typeOf := reflect.TypeOf(item)
@@ -86,7 +85,6 @@ func getTagValMap(v any) []string {
 	fieldNum := typeOf.NumField()
 	for i := 0; i < fieldNum; i++ {
 		structField := typeOf.Field(i)
-		//tagValue := structField.Tag.Get(tag)
 		rv := reflect.ValueOf(v)
 		if isPtr {
 			rv = rv.Elem()
@@ -112,13 +110,13 @@ func struct2MapTagList(v any) [][]string {
 		resList = append(resList, getTagValMap(val))
 		break
 	default:
-		panic(fmt.Sprintf("type %v not support", reflect.TypeOf(v).Kind()))
+		dglogger.Errorf(dgctx.SimpleDgContext(), "type %v not support", reflect.TypeOf(v).Kind())
 	}
 	return resList
 }
 
 func ExportStruct2Xlsx(v any) (*excelize.File, error) {
-	tagList := getStructTagList(v, "excel")
+	tagList := getStructTagList(v, excelTag)
 	mapTagList := struct2MapTagList(v)
 	xlsx := excelize.NewFile()
 	_, _ = xlsx.NewSheet(defaultSheetName)
@@ -135,9 +133,9 @@ func ExportStruct2Xlsx(v any) (*excelize.File, error) {
 		if wt == 0 {
 			wt = 20
 		}
-		_ = xlsx.SetColWidth(defaultSheetName, columnFlags[c], columnFlags[c], float64(wt))
+		_ = xlsx.SetColWidth(defaultSheetName, columnIndexToName(c), columnIndexToName(c), float64(wt))
 
-		cellIndex := columnFlags[c] + "1"
+		cellIndex := columnIndexToName(c) + "1"
 		_ = xlsx.SetCellValue(defaultSheetName, cellIndex, name)
 		_ = xlsx.SetCellStyle(defaultSheetName, cellIndex, cellIndex, centerStyleId)
 	}
@@ -160,7 +158,7 @@ func ExportStruct2Xlsx(v any) (*excelize.File, error) {
 				}
 			}
 
-			cellIndex := columnFlags[c] + strconv.Itoa(r+2)
+			cellIndex := columnIndexToName(c) + strconv.Itoa(r+2)
 			if urlRegex.MatchString(tagVal) {
 				_ = xlsx.SetCellFormula(defaultSheetName, cellIndex, fmt.Sprintf("=HYPERLINK(\"%s\", \"%s\")", tagVal, tagVal))
 			} else {
@@ -199,7 +197,7 @@ func ExportStruct2XlsxByTemplate(v any, templateFilePath string, headerRow int) 
 	}
 	headers := rows[headerRow]
 
-	tagList := getStructTagList(v, "excel")
+	tagList := getStructTagList(v, excelTag)
 	mapTagList := struct2MapTagList(v)
 
 	for r, mapTagVal := range mapTagList {
@@ -226,14 +224,14 @@ func ExportStruct2XlsxByTemplate(v any, templateFilePath string, headerRow int) 
 
 			for c, header := range headers {
 				if header == name {
-					cellIndex := columnFlags[c] + strconv.Itoa(r+2)
+					cellIndex := columnIndexToName(c) + strconv.Itoa(r+2)
 					if urlRegex.MatchString(tagVal) {
 						_ = xlsx.SetCellFormula(firstSheetName, cellIndex, fmt.Sprintf("=HYPERLINK(\"%s\", \"%s\")", tagVal, tagVal))
 					} else {
 						_ = xlsx.SetCellValue(firstSheetName, cellIndex, tagVal)
 					}
 
-					cellStyle, err := xlsx.GetCellStyle(firstSheetName, columnFlags[c]+"2")
+					cellStyle, err := xlsx.GetCellStyle(firstSheetName, columnIndexToName(c)+"2")
 					if err == nil {
 						_ = xlsx.SetCellStyle(firstSheetName, cellIndex, cellIndex, cellStyle)
 					}
@@ -297,15 +295,15 @@ func fillExcelSheets(xlsx *excelize.File, sheets []*ExcelSheet) {
 				alignCenterColumns = append(alignCenterColumns, c)
 			}
 
-			_ = xlsx.SetColWidth(sheet.Name, columnFlags[c], columnFlags[c], header.Width)
-			cellIndex := columnFlags[c] + "1"
+			_ = xlsx.SetColWidth(sheet.Name, columnIndexToName(c), columnIndexToName(c), header.Width)
+			cellIndex := columnIndexToName(c) + "1"
 			_ = xlsx.SetCellValue(sheet.Name, cellIndex, header.Name)
 			_ = xlsx.SetCellStyle(sheet.Name, cellIndex, cellIndex, centerStyleId)
 		}
 
 		for r, data := range sheet.Datas {
 			for c, val := range data {
-				cellIndex := columnFlags[c] + strconv.Itoa(r+2)
+				cellIndex := columnIndexToName(c) + strconv.Itoa(r+2)
 				strVal, ok := val.(string)
 				if ok && urlRegex.MatchString(strVal) {
 					_ = xlsx.SetCellFormula(sheet.Name, cellIndex, fmt.Sprintf("=HYPERLINK(\"%s\", \"%s\")", val, val))
@@ -320,6 +318,14 @@ func fillExcelSheets(xlsx *excelize.File, sheets []*ExcelSheet) {
 
 		frozenFirstRow(xlsx, sheet.Name)
 	}
+}
+
+func columnIndexToName(index int) string {
+	name, err := excelize.ColumnNumberToName(index + 1)
+	if err != nil {
+		return "A"
+	}
+	return name
 }
 
 func frozenFirstRow(xlsx *excelize.File, sheetName string) {
