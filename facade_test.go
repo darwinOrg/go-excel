@@ -52,11 +52,11 @@ func TestExportStruct2XlsxFileAndInsertRows(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	xlsx.InsertRows("Sheet1", 1, 1)
-	xlsx.SetCellStr("Sheet1", "A1", "头部")
-	//xlsx.SetCellFormula("Sheet1", "A1", "=HYPERLINK(\"https://www.baidu.com\", \"https://www.baidu.com\")")
+	_ = xlsx.InsertRows(DefaultSheetName, 1, 1)
+	_ = xlsx.SetCellStr(DefaultSheetName, "A1", "头部")
+	//xlsx.SetCellFormula(DefaultSheetName, "A1", "=HYPERLINK(\"https://www.baidu.com\", \"https://www.baidu.com\")")
 
-	xlsx.SetPanes("Sheet1", &excelize.Panes{
+	_ = xlsx.SetPanes(DefaultSheetName, &excelize.Panes{
 		Freeze:      true,
 		XSplit:      0,
 		YSplit:      2,
@@ -92,7 +92,7 @@ func TestAddChart(t *testing.T) {
 			fmt.Println(err)
 		}
 	}()
-	f.NewSheet("Sheet2")
+	_, _ = f.NewSheet("Sheet2")
 
 	for idx, row := range [][]interface{}{
 		{"整体数据"},
@@ -104,10 +104,10 @@ func TestAddChart(t *testing.T) {
 			fmt.Println(err)
 			return
 		}
-		f.SetSheetRow("Sheet2", cell, &row)
+		_ = f.SetSheetRow("Sheet2", cell, &row)
 	}
 	varyColors := false
-	if err := f.AddChart("Sheet1", "F1", &excelize.Chart{
+	if err := f.AddChart(DefaultSheetName, "F1", &excelize.Chart{
 		Type: excelize.Col3DClustered,
 		Series: []excelize.ChartSeries{
 			{

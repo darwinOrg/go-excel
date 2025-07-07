@@ -14,8 +14,6 @@ import (
 	"strings"
 )
 
-const defaultSheetName = "Sheet1"
-
 var (
 	urlRegex     = regexp.MustCompile(`^((https|http|ftp|rtsp|mms)?://)\S+$`)
 	nameRegex    = regexp.MustCompile(`name\((.*?)\)`)
@@ -119,7 +117,7 @@ func ExportStruct2Xlsx(v any) (*excelize.File, error) {
 	tagList := getStructTagList(v, excelTag)
 	mapTagList := struct2MapTagList(v)
 	xlsx := excelize.NewFile()
-	_, _ = xlsx.NewSheet(defaultSheetName)
+	_, _ = xlsx.NewSheet(DefaultSheetName)
 	centerStyleId := buildCenterStyleId(xlsx)
 
 	for c, tagVal := range tagList {
@@ -133,11 +131,11 @@ func ExportStruct2Xlsx(v any) (*excelize.File, error) {
 		if wt == 0 {
 			wt = 20
 		}
-		_ = xlsx.SetColWidth(defaultSheetName, columnIndexToName(c), columnIndexToName(c), float64(wt))
+		_ = xlsx.SetColWidth(DefaultSheetName, columnIndexToName(c), columnIndexToName(c), float64(wt))
 
 		cellIndex := columnIndexToName(c) + "1"
-		_ = xlsx.SetCellValue(defaultSheetName, cellIndex, name)
-		_ = xlsx.SetCellStyle(defaultSheetName, cellIndex, cellIndex, centerStyleId)
+		_ = xlsx.SetCellValue(DefaultSheetName, cellIndex, name)
+		_ = xlsx.SetCellStyle(DefaultSheetName, cellIndex, cellIndex, centerStyleId)
 	}
 
 	for r, mapTagVal := range mapTagList {
@@ -160,16 +158,16 @@ func ExportStruct2Xlsx(v any) (*excelize.File, error) {
 
 			cellIndex := columnIndexToName(c) + strconv.Itoa(r+2)
 			if urlRegex.MatchString(tagVal) {
-				_ = xlsx.SetCellFormula(defaultSheetName, cellIndex, fmt.Sprintf("=HYPERLINK(\"%s\", \"%s\")", tagVal, tagVal))
+				_ = xlsx.SetCellFormula(DefaultSheetName, cellIndex, fmt.Sprintf("=HYPERLINK(\"%s\", \"%s\")", tagVal, tagVal))
 			} else {
-				_ = xlsx.SetCellValue(defaultSheetName, cellIndex, tagVal)
+				_ = xlsx.SetCellValue(DefaultSheetName, cellIndex, tagVal)
 			}
 
 			c++
 		}
 	}
 
-	frozenFirstRow(xlsx, defaultSheetName)
+	frozenFirstRow(xlsx, DefaultSheetName)
 
 	return xlsx, nil
 }
@@ -256,7 +254,7 @@ func ExportExcelSheets(sheets []*ExcelSheet) *excelize.File {
 			sheet.Name = fmt.Sprintf("Sheet%d", xlsx.SheetCount+1)
 		}
 		if i == 0 {
-			_ = xlsx.SetSheetName(defaultSheetName, sheet.Name)
+			_ = xlsx.SetSheetName(DefaultSheetName, sheet.Name)
 		} else {
 			_, _ = xlsx.NewSheet(sheet.Name)
 		}
