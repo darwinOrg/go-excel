@@ -3,7 +3,7 @@ module github.com/darwinOrg/go-excel
 go 1.23.1
 
 require (
-	github.com/darwinOrg/go-common v0.1.94
+	github.com/darwinOrg/go-common v0.1.95
 	github.com/darwinOrg/go-logger v0.0.12
 	github.com/xuri/excelize/v2 v2.9.1
 )

@@ -3,6 +3,7 @@ package dgexcel
 import (
 	"fmt"
 	dgcoll "github.com/darwinOrg/go-common/collection"
+	"github.com/darwinOrg/go-common/utils"
 	"github.com/xuri/excelize/v2"
 	"regexp"
 	"strconv"
@@ -45,6 +46,11 @@ func ColumnIndexToName(index int) string {
 	return name
 }
 
+func WriteRowStruct(xlsx *excelize.File, sheetName string, row, fromCol, styleId int, obj any) {
+	datas := utils.ReflectAllFieldValues(obj)
+	WriteRowDatas(xlsx, sheetName, row, fromCol, styleId, datas...)
+}
+
 func WriteRowDatas(xlsx *excelize.File, sheetName string, row, fromCol, styleId int, datas ...any) {
 	rowStr := strconv.Itoa(row + 1)
 
@@ -55,6 +61,11 @@ func WriteRowDatas(xlsx *excelize.File, sheetName string, row, fromCol, styleId 
 	if styleId > 0 {
 		_ = xlsx.SetCellStyle(sheetName, ColumnIndexToName(fromCol)+rowStr, ColumnIndexToName(fromCol+len(datas)-1)+rowStr, styleId)
 	}
+}
+
+func WriteColumnStruct(xlsx *excelize.File, sheetName string, col, fromRow, styleId int, obj any) {
+	datas := utils.ReflectAllFieldValues(obj)
+	WriteColumnDatas(xlsx, sheetName, col, fromRow, styleId, datas...)
 }
 
 func WriteColumnDatas(xlsx *excelize.File, sheetName string, col, fromRow, styleId int, datas ...any) {
