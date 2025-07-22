@@ -80,6 +80,16 @@ func WriteColumnDatas(xlsx *excelize.File, sheetName string, col, fromRow, style
 	}
 }
 
+func WriteAndMergeCell(xlsx *excelize.File, sheetName string, topLeftCell, bottomRightCell string, styleId int, data any) {
+	_ = xlsx.SetCellValue(sheetName, topLeftCell, data)
+
+	if styleId > 0 {
+		_ = xlsx.SetCellStyle(sheetName, topLeftCell, bottomRightCell, styleId)
+	}
+
+	_ = xlsx.MergeCell(sheetName, topLeftCell, bottomRightCell)
+}
+
 func FillExcelSheets(xlsx *excelize.File, sheets []*ExcelSheet) {
 	centerStyleId := BuildCenterStyleId(xlsx)
 
