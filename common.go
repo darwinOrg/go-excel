@@ -46,6 +46,18 @@ func ColumnIndexToName(index int) string {
 	return name
 }
 
+func WriteCell(xlsx *excelize.File, sheetName string, row, col, styleId int, data any) {
+	colStr := ColumnIndexToName(col)
+	rowStr := strconv.Itoa(row + 1)
+	cell := colStr + rowStr
+
+	_ = xlsx.SetCellValue(sheetName, cell, data)
+
+	if styleId > 0 {
+		_ = xlsx.SetCellStyle(sheetName, cell, cell, styleId)
+	}
+}
+
 func WriteRowStruct(xlsx *excelize.File, sheetName string, row, fromCol, styleId int, obj any) {
 	datas := utils.ReflectAllFieldValues(obj)
 	WriteRowDatas(xlsx, sheetName, row, fromCol, styleId, datas...)
