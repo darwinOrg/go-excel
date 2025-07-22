@@ -15,14 +15,6 @@ import (
 	"unsafe"
 )
 
-const (
-	excelTag   = "excel"
-	nameTag    = "name"
-	uniqueTag  = "unique"
-	dateTag    = "date"
-	mappingTag = "mapping"
-)
-
 var AllowMaxRow = 10000
 
 type parser struct {

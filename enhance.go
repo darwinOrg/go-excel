@@ -52,7 +52,7 @@ func RemoveDuplicateRowsByColumn(xlsx *excelize.File, sheetName string, startRow
 
 	for rowIndex, row := range newRows {
 		for colIndex, cellValue := range row {
-			_ = nf.SetCellValue(sheetName, fmt.Sprintf("%s%d", columnIndexToName(colIndex), rowIndex+1), cellValue)
+			_ = nf.SetCellValue(sheetName, fmt.Sprintf("%s%d", ColumnIndexToName(colIndex), rowIndex+1), cellValue)
 		}
 	}
 

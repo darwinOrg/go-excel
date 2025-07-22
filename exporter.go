@@ -3,34 +3,164 @@ package dgexcel
 import (
 	"errors"
 	"fmt"
-	dgcoll "github.com/darwinOrg/go-common/collection"
 	dgctx "github.com/darwinOrg/go-common/context"
 	dglogger "github.com/darwinOrg/go-logger"
 	"github.com/xuri/excelize/v2"
 	"os"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 )
 
-var (
-	urlRegex     = regexp.MustCompile(`^((https|http|ftp|rtsp|mms)?://)\S+$`)
-	nameRegex    = regexp.MustCompile(`name\((.*?)\)`)
-	mappingRegex = regexp.MustCompile(`mapping\((.*?)\)`)
-	widthRegex   = regexp.MustCompile(`width\((.*?)\)`)
-)
+func ExportStruct2Xlsx(v any) (*excelize.File, error) {
+	tagList := getStructTagList(v, excelTag)
+	mapTagList := struct2MapTagList(v)
+	xlsx := excelize.NewFile()
+	_, _ = xlsx.NewSheet(DefaultSheetName)
+	centerStyleId := BuildCenterStyleId(xlsx)
 
-type ExcelHeader struct {
-	Name        string
-	Width       float64
-	AlignCenter bool
+	for c, tagVal := range tagList {
+		name, _ := stringMatchExport(tagVal, nameRegex)
+
+		width, _ := stringMatchExport(tagVal, widthRegex)
+		if width == "" {
+			width = "20"
+		}
+		wt, _ := strconv.Atoi(width)
+		if wt == 0 {
+			wt = 20
+		}
+		_ = xlsx.SetColWidth(DefaultSheetName, ColumnIndexToName(c), ColumnIndexToName(c), float64(wt))
+
+		cellIndex := ColumnIndexToName(c) + "1"
+		_ = xlsx.SetCellValue(DefaultSheetName, cellIndex, name)
+		_ = xlsx.SetCellStyle(DefaultSheetName, cellIndex, cellIndex, centerStyleId)
+	}
+
+	for r, mapTagVal := range mapTagList {
+		c := 0
+		for i, tagVal := range mapTagVal {
+			tagKey := tagList[i]
+			mapping, _ := stringMatchExport(tagKey, mappingRegex)
+			if mapping != "" {
+				formatStr := strings.Split(mapping, ",")
+				for _, format := range formatStr {
+					n := strings.SplitN(format, ":", 2)
+					if len(n) != 2 {
+						continue
+					}
+					if n[1] == tagVal {
+						tagVal = n[0]
+					}
+				}
+			}
+
+			cellIndex := ColumnIndexToName(c) + strconv.Itoa(r+2)
+			if urlRegex.MatchString(tagVal) {
+				_ = xlsx.SetCellFormula(DefaultSheetName, cellIndex, fmt.Sprintf("=HYPERLINK(\"%s\", \"%s\")", tagVal, tagVal))
+			} else {
+				_ = xlsx.SetCellValue(DefaultSheetName, cellIndex, tagVal)
+			}
+
+			c++
+		}
+	}
+
+	FrozenFirstRow(xlsx, DefaultSheetName)
+
+	return xlsx, nil
 }
 
-type ExcelSheet struct {
-	Name    string
-	Headers []*ExcelHeader
-	Datas   [][]any
+func ExportStruct2XlsxByTemplate(v any, templateFilePath string, headerRow int) (*excelize.File, error) {
+	file, err := os.Open(templateFilePath)
+	if err != nil {
+		return nil, err
+	}
+	defer func(f *os.File) {
+		_ = f.Close()
+	}(file)
+	xlsx, err := excelize.OpenReader(file)
+	if err != nil {
+		return nil, err
+	}
+
+	firstSheetName := xlsx.GetSheetList()[0]
+	rows, err := xlsx.GetRows(firstSheetName)
+	if err != nil {
+		return nil, err
+	}
+	if len(rows) < headerRow+1 {
+		return nil, errors.New("invalid header row")
+	}
+	headers := rows[headerRow]
+
+	tagList := getStructTagList(v, excelTag)
+	mapTagList := struct2MapTagList(v)
+
+	for r, mapTagVal := range mapTagList {
+		for i, tagVal := range mapTagVal {
+			tagKey := tagList[i]
+			mapping, _ := stringMatchExport(tagKey, mappingRegex)
+			if mapping != "" {
+				formatStr := strings.Split(mapping, ",")
+				for _, format := range formatStr {
+					n := strings.SplitN(format, ":", 2)
+					if len(n) != 2 {
+						continue
+					}
+					if n[1] == tagVal {
+						tagVal = n[0]
+					}
+				}
+			}
+
+			name, _ := stringMatchExport(tagKey, nameRegex)
+			if name == "" {
+				continue
+			}
+
+			for c, header := range headers {
+				if header == name {
+					cellIndex := ColumnIndexToName(c) + strconv.Itoa(r+2)
+					if urlRegex.MatchString(tagVal) {
+						_ = xlsx.SetCellFormula(firstSheetName, cellIndex, fmt.Sprintf("=HYPERLINK(\"%s\", \"%s\")", tagVal, tagVal))
+					} else {
+						_ = xlsx.SetCellValue(firstSheetName, cellIndex, tagVal)
+					}
+
+					cellStyle, err := xlsx.GetCellStyle(firstSheetName, ColumnIndexToName(c)+"2")
+					if err == nil {
+						_ = xlsx.SetCellStyle(firstSheetName, cellIndex, cellIndex, cellStyle)
+					}
+
+					break
+				}
+			}
+		}
+	}
+
+	return xlsx, nil
+}
+
+func ExportExcelSheets(sheets []*ExcelSheet) *excelize.File {
+	xlsx := excelize.NewFile()
+	if len(sheets) == 0 {
+		return xlsx
+	}
+
+	for i, sheet := range sheets {
+		if sheet.Name == "" {
+			sheet.Name = fmt.Sprintf("Sheet%d", xlsx.SheetCount+1)
+		}
+		if i == 0 {
+			_ = xlsx.SetSheetName(DefaultSheetName, sheet.Name)
+		} else {
+			_, _ = xlsx.NewSheet(sheet.Name)
+		}
+	}
+
+	FillExcelSheets(xlsx, sheets)
+	return xlsx
 }
 
 func getStructTagList(v any, tag string) []string {
@@ -111,238 +241,4 @@ func struct2MapTagList(v any) [][]string {
 		dglogger.Errorf(dgctx.SimpleDgContext(), "type %v not support", reflect.TypeOf(v).Kind())
 	}
 	return resList
-}
-
-func ExportStruct2Xlsx(v any) (*excelize.File, error) {
-	tagList := getStructTagList(v, excelTag)
-	mapTagList := struct2MapTagList(v)
-	xlsx := excelize.NewFile()
-	_, _ = xlsx.NewSheet(DefaultSheetName)
-	centerStyleId := buildCenterStyleId(xlsx)
-
-	for c, tagVal := range tagList {
-		name, _ := stringMatchExport(tagVal, nameRegex)
-
-		width, _ := stringMatchExport(tagVal, widthRegex)
-		if width == "" {
-			width = "20"
-		}
-		wt, _ := strconv.Atoi(width)
-		if wt == 0 {
-			wt = 20
-		}
-		_ = xlsx.SetColWidth(DefaultSheetName, columnIndexToName(c), columnIndexToName(c), float64(wt))
-
-		cellIndex := columnIndexToName(c) + "1"
-		_ = xlsx.SetCellValue(DefaultSheetName, cellIndex, name)
-		_ = xlsx.SetCellStyle(DefaultSheetName, cellIndex, cellIndex, centerStyleId)
-	}
-
-	for r, mapTagVal := range mapTagList {
-		c := 0
-		for i, tagVal := range mapTagVal {
-			tagKey := tagList[i]
-			mapping, _ := stringMatchExport(tagKey, mappingRegex)
-			if mapping != "" {
-				formatStr := strings.Split(mapping, ",")
-				for _, format := range formatStr {
-					n := strings.SplitN(format, ":", 2)
-					if len(n) != 2 {
-						continue
-					}
-					if n[1] == tagVal {
-						tagVal = n[0]
-					}
-				}
-			}
-
-			cellIndex := columnIndexToName(c) + strconv.Itoa(r+2)
-			if urlRegex.MatchString(tagVal) {
-				_ = xlsx.SetCellFormula(DefaultSheetName, cellIndex, fmt.Sprintf("=HYPERLINK(\"%s\", \"%s\")", tagVal, tagVal))
-			} else {
-				_ = xlsx.SetCellValue(DefaultSheetName, cellIndex, tagVal)
-			}
-
-			c++
-		}
-	}
-
-	frozenFirstRow(xlsx, DefaultSheetName)
-
-	return xlsx, nil
-}
-
-func ExportStruct2XlsxByTemplate(v any, templateFilePath string, headerRow int) (*excelize.File, error) {
-	file, err := os.Open(templateFilePath)
-	if err != nil {
-		return nil, err
-	}
-	defer func(f *os.File) {
-		_ = f.Close()
-	}(file)
-	xlsx, err := excelize.OpenReader(file)
-	if err != nil {
-		return nil, err
-	}
-
-	firstSheetName := xlsx.GetSheetList()[0]
-	rows, err := xlsx.GetRows(firstSheetName)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) < headerRow+1 {
-		return nil, errors.New("invalid header row")
-	}
-	headers := rows[headerRow]
-
-	tagList := getStructTagList(v, excelTag)
-	mapTagList := struct2MapTagList(v)
-
-	for r, mapTagVal := range mapTagList {
-		for i, tagVal := range mapTagVal {
-			tagKey := tagList[i]
-			mapping, _ := stringMatchExport(tagKey, mappingRegex)
-			if mapping != "" {
-				formatStr := strings.Split(mapping, ",")
-				for _, format := range formatStr {
-					n := strings.SplitN(format, ":", 2)
-					if len(n) != 2 {
-						continue
-					}
-					if n[1] == tagVal {
-						tagVal = n[0]
-					}
-				}
-			}
-
-			name, _ := stringMatchExport(tagKey, nameRegex)
-			if name == "" {
-				continue
-			}
-
-			for c, header := range headers {
-				if header == name {
-					cellIndex := columnIndexToName(c) + strconv.Itoa(r+2)
-					if urlRegex.MatchString(tagVal) {
-						_ = xlsx.SetCellFormula(firstSheetName, cellIndex, fmt.Sprintf("=HYPERLINK(\"%s\", \"%s\")", tagVal, tagVal))
-					} else {
-						_ = xlsx.SetCellValue(firstSheetName, cellIndex, tagVal)
-					}
-
-					cellStyle, err := xlsx.GetCellStyle(firstSheetName, columnIndexToName(c)+"2")
-					if err == nil {
-						_ = xlsx.SetCellStyle(firstSheetName, cellIndex, cellIndex, cellStyle)
-					}
-
-					break
-				}
-			}
-		}
-	}
-
-	return xlsx, nil
-}
-
-func ExportExcelSheets(sheets []*ExcelSheet) *excelize.File {
-	xlsx := excelize.NewFile()
-	if len(sheets) == 0 {
-		return xlsx
-	}
-
-	for i, sheet := range sheets {
-		if sheet.Name == "" {
-			sheet.Name = fmt.Sprintf("Sheet%d", xlsx.SheetCount+1)
-		}
-		if i == 0 {
-			_ = xlsx.SetSheetName(DefaultSheetName, sheet.Name)
-		} else {
-			_, _ = xlsx.NewSheet(sheet.Name)
-		}
-	}
-
-	fillExcelSheets(xlsx, sheets)
-	return xlsx
-}
-
-func AppendExcelSheets(xlsx *excelize.File, sheets []*ExcelSheet) {
-	if len(sheets) == 0 {
-		return
-	}
-
-	for _, sheet := range sheets {
-		if sheet.Name == "" {
-			sheet.Name = fmt.Sprintf("Sheet%d", xlsx.SheetCount+1)
-		}
-		_, _ = xlsx.NewSheet(sheet.Name)
-	}
-
-	fillExcelSheets(xlsx, sheets)
-}
-
-func fillExcelSheets(xlsx *excelize.File, sheets []*ExcelSheet) {
-	centerStyleId := buildCenterStyleId(xlsx)
-
-	for _, sheet := range sheets {
-		var alignCenterColumns []int
-
-		for c, header := range sheet.Headers {
-			if header.Width == 0 {
-				header.Width = 20
-			}
-			if header.AlignCenter {
-				alignCenterColumns = append(alignCenterColumns, c)
-			}
-
-			_ = xlsx.SetColWidth(sheet.Name, columnIndexToName(c), columnIndexToName(c), header.Width)
-			cellIndex := columnIndexToName(c) + "1"
-			_ = xlsx.SetCellValue(sheet.Name, cellIndex, header.Name)
-			_ = xlsx.SetCellStyle(sheet.Name, cellIndex, cellIndex, centerStyleId)
-		}
-
-		for r, data := range sheet.Datas {
-			for c, val := range data {
-				cellIndex := columnIndexToName(c) + strconv.Itoa(r+2)
-				strVal, ok := val.(string)
-				if ok && urlRegex.MatchString(strVal) {
-					_ = xlsx.SetCellFormula(sheet.Name, cellIndex, fmt.Sprintf("=HYPERLINK(\"%s\", \"%s\")", val, val))
-				} else {
-					_ = xlsx.SetCellValue(sheet.Name, cellIndex, val)
-				}
-				if dgcoll.Contains(alignCenterColumns, c) {
-					_ = xlsx.SetCellStyle(sheet.Name, cellIndex, cellIndex, centerStyleId)
-				}
-			}
-		}
-
-		frozenFirstRow(xlsx, sheet.Name)
-	}
-}
-
-func columnIndexToName(index int) string {
-	name, err := excelize.ColumnNumberToName(index + 1)
-	if err != nil {
-		return "A"
-	}
-	return name
-}
-
-func frozenFirstRow(xlsx *excelize.File, sheetName string) {
-	_ = xlsx.SetPanes(sheetName, &excelize.Panes{
-		Freeze:      true,
-		XSplit:      0,
-		YSplit:      1,
-		TopLeftCell: "A2",
-		ActivePane:  "bottomLeft",
-	})
-}
-
-func buildCenterStyleId(xlsx *excelize.File) int {
-	styleId, _ := xlsx.NewStyle(&excelize.Style{
-		Alignment: &excelize.Alignment{
-			Horizontal: "center",
-			Vertical:   "center",
-		},
-	})
-
-	return styleId
 }

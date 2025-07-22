@@ -10,8 +10,6 @@ import (
 	"strings"
 )
 
-const DefaultSheetName = "Sheet1"
-
 func SimpleBindExcel2Struct[T any](ctx *dgctx.DgContext, filePath string) ([]*T, error) {
 	return BindExcel2Struct[T](ctx, filePath, 1, 2)
 }
