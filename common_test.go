@@ -1,8 +1,9 @@
 package dgexcel
 
 import (
-	"github.com/xuri/excelize/v2"
 	"testing"
+
+	"github.com/xuri/excelize/v2"
 )
 
 func TestWriteRowDatas(t *testing.T) {

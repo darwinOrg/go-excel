@@ -2,12 +2,13 @@ package dgexcel
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	dgcoll "github.com/darwinOrg/go-common/collection"
 	dgctx "github.com/darwinOrg/go-common/context"
 	dgerr "github.com/darwinOrg/go-common/enums/error"
 	dglogger "github.com/darwinOrg/go-logger"
-	"os"
-	"strings"
 )
 
 func SimpleBindExcel2Struct[T any](ctx *dgctx.DgContext, filePath string) ([]*T, error) {
