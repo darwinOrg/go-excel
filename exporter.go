@@ -57,10 +57,10 @@ func ExportStruct2Xlsx(v any) (*excelize.File, error) {
 			}
 
 			cellIndex := ColumnIndexToName(c) + strconv.Itoa(r+2)
+			_ = xlsx.SetCellValue(DefaultSheetName, cellIndex, tagVal)
+
 			if urlRegex.MatchString(tagVal) {
-				_ = xlsx.SetCellFormula(DefaultSheetName, cellIndex, fmt.Sprintf("=HYPERLINK(\"%s\", \"%s\")", tagVal, tagVal))
-			} else {
-				_ = xlsx.SetCellValue(DefaultSheetName, cellIndex, tagVal)
+				_ = xlsx.SetCellHyperLink(DefaultSheetName, cellIndex, tagVal, "External")
 			}
 
 			c++
@@ -123,10 +123,10 @@ func ExportStruct2XlsxByTemplate(v any, templateFilePath string, headerRow int) 
 			for c, header := range headers {
 				if header == name {
 					cellIndex := ColumnIndexToName(c) + strconv.Itoa(r+2)
+					_ = xlsx.SetCellValue(firstSheetName, cellIndex, tagVal)
+
 					if urlRegex.MatchString(tagVal) {
-						_ = xlsx.SetCellFormula(firstSheetName, cellIndex, fmt.Sprintf("=HYPERLINK(\"%s\", \"%s\")", tagVal, tagVal))
-					} else {
-						_ = xlsx.SetCellValue(firstSheetName, cellIndex, tagVal)
+						_ = xlsx.SetCellHyperLink(firstSheetName, cellIndex, tagVal, "External")
 					}
 
 					cellStyle, err := xlsx.GetCellStyle(firstSheetName, ColumnIndexToName(c)+"2")

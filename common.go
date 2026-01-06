@@ -126,12 +126,12 @@ func FillExcelSheets(xlsx *excelize.File, sheets []*ExcelSheet) {
 		for r, data := range sheet.Datas {
 			for c, val := range data {
 				cellIndex := ColumnIndexToName(c) + strconv.Itoa(r+2)
-				strVal, ok := val.(string)
-				if ok && urlRegex.MatchString(strVal) {
-					_ = xlsx.SetCellFormula(sheet.Name, cellIndex, fmt.Sprintf("=HYPERLINK(\"%s\", \"%s\")", val, val))
-				} else {
-					_ = xlsx.SetCellValue(sheet.Name, cellIndex, val)
+				_ = xlsx.SetCellValue(sheet.Name, cellIndex, val)
+
+				if strVal, ok := val.(string); ok && urlRegex.MatchString(strVal) {
+					_ = xlsx.SetCellHyperLink(sheet.Name, cellIndex, strVal, "External")
 				}
+
 				if dgcoll.Contains(alignCenterColumns, c) {
 					_ = xlsx.SetCellStyle(sheet.Name, cellIndex, cellIndex, centerStyleId)
 				}

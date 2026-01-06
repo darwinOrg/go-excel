@@ -55,7 +55,7 @@ func TestExportStruct2XlsxFileAndInsertRows(t *testing.T) {
 	}
 	_ = xlsx.InsertRows(DefaultSheetName, 1, 1)
 	_ = xlsx.SetCellStr(DefaultSheetName, "A1", "头部")
-	//xlsx.SetCellFormula(DefaultSheetName, "A1", "=HYPERLINK(\"https://www.baidu.com\", \"https://www.baidu.com\")")
+	_ = xlsx.SetCellHyperLink(DefaultSheetName, "A1", "https://www.baidu.com", "External")
 
 	_ = xlsx.SetPanes(DefaultSheetName, &excelize.Panes{
 		Freeze:      true,
