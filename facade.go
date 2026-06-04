@@ -111,6 +111,9 @@ func ExportStruct2XlsxFile(ctx *dgctx.DgContext, v any, filePath string) error {
 		dglogger.Errorf(ctx, "export struct to xlsx file error: %v", err)
 		return err
 	}
+	defer func() {
+		_ = xlsx.Close()
+	}()
 
 	err = xlsx.SaveAs(filePath)
 	if err != nil {
