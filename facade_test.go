@@ -17,7 +17,7 @@ type User struct {
 }
 
 func TestSimpleBindExcel2Struct(t *testing.T) {
-	ctx := &dgctx.DgContext{TraceId: "123"}
+	ctx := dgctx.SimpleDgContext()
 	users, err := SimpleBindExcel2Struct[User](ctx, "./users.xlsx")
 	if err != nil {
 		dglogger.Errorf(ctx, "bind excel to struct error: \n%v", err)
@@ -28,7 +28,7 @@ func TestSimpleBindExcel2Struct(t *testing.T) {
 }
 
 func TestBindExcelOfPrototype(t *testing.T) {
-	ctx := &dgctx.DgContext{TraceId: "123"}
+	ctx := dgctx.SimpleDgContext()
 	users, _ := BindExcelUsingTargetBuilder(ctx, "./users.xlsx", 1, 2, func() any {
 		return &User{}
 	})
@@ -37,7 +37,7 @@ func TestBindExcelOfPrototype(t *testing.T) {
 }
 
 func TestSimpleExportStruct2XlsxFile(t *testing.T) {
-	ctx := &dgctx.DgContext{TraceId: "123"}
+	ctx := dgctx.SimpleDgContext()
 	users, _ := SimpleBindExcel2Struct[User](ctx, "./users.xlsx")
 	err := ExportStruct2XlsxFile(ctx, users, "./exported_users.xlsx")
 	if err != nil {
@@ -46,7 +46,7 @@ func TestSimpleExportStruct2XlsxFile(t *testing.T) {
 }
 
 func TestExportStruct2XlsxFileAndInsertRows(t *testing.T) {
-	ctx := &dgctx.DgContext{TraceId: "123"}
+	ctx := dgctx.SimpleDgContext()
 	users, _ := SimpleBindExcel2Struct[User](ctx, "./users.xlsx")
 
 	xlsx, err := ExportStruct2Xlsx(users)
@@ -72,7 +72,7 @@ func TestExportStruct2XlsxFileAndInsertRows(t *testing.T) {
 }
 
 func TestExportStruct2XlsxByTemplate(t *testing.T) {
-	ctx := &dgctx.DgContext{TraceId: "123"}
+	ctx := dgctx.SimpleDgContext()
 	users, _ := SimpleBindExcel2Struct[User](ctx, "./users.xlsx")
 
 	xlsx, err := ExportStruct2XlsxByTemplate(users, "./users_template.xlsx", 0)

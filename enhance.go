@@ -59,3 +59,38 @@ func RemoveDuplicateRowsByColumn(xlsx *excelize.File, sheetName string, startRow
 
 	return nf, nil
 }
+
+func MergeDuplicateCellsByColumn(xlsx *excelize.File, sheetName string, columnIndex int) {
+	rows, _ := xlsx.GetRows(sheetName)
+	rowsLen := len(rows)
+	if rowsLen < 2 {
+		return
+	}
+
+	var (
+		preValue      string
+		startRowIndex int
+	)
+
+	colStr := ColumnIndexToName(columnIndex)
+	styleId, _ := xlsx.NewStyle(&excelize.Style{
+		Alignment: &excelize.Alignment{
+			Vertical: "center",
+		},
+	})
+
+	for i, row := range rows {
+		cellValue := strings.TrimSpace(row[columnIndex])
+		if cellValue != preValue {
+			if i-startRowIndex > 1 {
+				MergeCell(xlsx, sheetName, fmt.Sprintf("%s%d", colStr, startRowIndex+1), fmt.Sprintf("%s%d", colStr, i), styleId)
+			}
+			preValue = cellValue
+			startRowIndex = i
+		}
+	}
+
+	if rowsLen-startRowIndex > 2 {
+		MergeCell(xlsx, sheetName, fmt.Sprintf("%s%d", colStr, startRowIndex+1), fmt.Sprintf("%s%d", colStr, rowsLen), styleId)
+	}
+}

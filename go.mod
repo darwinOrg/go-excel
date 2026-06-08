@@ -4,13 +4,13 @@ go 1.25.0
 
 require (
 	github.com/darwinOrg/go-common v0.2.28
-	github.com/darwinOrg/go-logger v0.0.18
+	github.com/darwinOrg/go-logger v0.0.19
 	github.com/xuri/excelize/v2 v2.10.1
 )
 
 require (
 	github.com/natefinch/lumberjack v2.0.0+incompatible // indirect
-	github.com/richardlehane/mscfb v1.0.6 // indirect
+	github.com/richardlehane/mscfb v1.0.7 // indirect
 	github.com/richardlehane/msoleps v1.0.6 // indirect
 	github.com/tiendc/go-deepcopy v1.7.2 // indirect
 	github.com/xuri/efp v0.0.1 // indirect
