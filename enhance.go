@@ -67,17 +67,17 @@ func MergeDuplicateCellsByColumn(xlsx *excelize.File, sheetName string, columnIn
 		return
 	}
 
-	var (
-		preValue      string
-		startRowIndex int
-	)
-
 	colStr := ColumnIndexToName(columnIndex)
 	styleId, _ := xlsx.NewStyle(&excelize.Style{
 		Alignment: &excelize.Alignment{
 			Vertical: "center",
 		},
 	})
+
+	var (
+		preValue      string
+		startRowIndex int
+	)
 
 	for i, row := range rows {
 		cellValue := strings.TrimSpace(row[columnIndex])
