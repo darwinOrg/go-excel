@@ -90,7 +90,7 @@ func MergeDuplicateCellsByColumn(xlsx *excelize.File, sheetName string, columnIn
 		}
 	}
 
-	if rowsLen-startRowIndex > 2 {
+	if rowsLen-startRowIndex > 1 {
 		MergeCell(xlsx, sheetName, fmt.Sprintf("%s%d", colStr, startRowIndex+1), fmt.Sprintf("%s%d", colStr, rowsLen), styleId)
 	}
 }
